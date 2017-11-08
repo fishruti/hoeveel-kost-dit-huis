@@ -61,6 +61,7 @@ def pre_process(train, val, test, flag):
 
     train['GarageFinish'] = train['GarageFinish'].fillna('Na')
 
+    train.GarageQual.fillna(0, inplace= True)
     for col in ['GarageQual', 'GarageCond']:
         train[col] = train[col].replace(to_replace = ['Ex', 'Gd', 'TA','Fa', 'Po', 'Na' ], value = [5,4,3,2,1,0])
 
@@ -107,13 +108,19 @@ def pre_process(train, val, test, flag):
     
     train['Functional'] = train['Functional'].fillna('Na')
     train.drop(['SaleType'], axis=1, inplace=True)
-
+    
+    train.PavedDrive.replace(to_replace = ['Y', 'P', 'N'], value = [1,0,0], inplace = True)
+    train.drop(['SaleCondition'], axis=1, inplace = True)
+    train.drop(['Fence'], axis=1, inplace = True)
+    train.Heating.replace(to_replace = ['GasW', 'GasA', 'Gravity', 'OtherW', 'Wall', 'Floor'], value = [1,1,0,0,0,0]) 
+    train.drop(['Neighborhood'], axis = 1,  inplace = True)
+    
     return train
 
 def group(train, val, test):
-    groups = grouping('Neighborhood', train, 10000)
-    val['Neighborhood']  = assign_grouping('Neighborhood', val, groups)
-    test['Neighborhood'] = assign_grouping('Neighborhood', test, groups)
+    #groups = grouping('Neighborhood', train, 10000)
+    #val['Neighborhood']  = assign_grouping('Neighborhood', val, groups)
+    #test['Neighborhood'] = assign_grouping('Neighborhood', test, groups)
 
     groups = grouping('Functional', train, 30000)
     assign_grouping('Functional', val, groups)
@@ -122,16 +129,11 @@ def group(train, val, test):
     test['Functional'] = test['Functional'].replace(to_replace = ['Typ', 'Min1', 'Min2', 'Mod','Maj1', 'Maj2', 'Sev', 'Sal','Na' ], value = [8,7,6,5,4,3,2,1,0])
     val['Functional'] = val['Functional'].replace(to_replace = ['Typ', 'Min1', 'Min2', 'Mod','Maj1', 'Maj2', 'Sev', 'Sal','Na' ], value = [8,7,6,5,4,3,2,1,0])
     
-    
-    groups = grouping('PavedDrive', train, 30000)
-    assign_grouping('PavedDrive', val, groups)
-    assign_grouping('PavedDrive', test, groups)
-
-    val['Fence'] = val['Fence'].fillna('Na')
-    test['Fence'] = test['Fence'].fillna('Na')
-    groups = grouping('Fence', train, 10000)
-    assign_grouping('Fence', val, groups)
-    assign_grouping('Fence', test, groups)
+    #val['Fence'] = val['Fence'].fillna('Na')
+    #test['Fence'] = test['Fence'].fillna('Na')
+    #groups = grouping('Fence', train, 10000)
+    #assign_grouping('Fence', val, groups)
+    #assign_grouping('Fence', test, groups)
     
     
     #test['SaleType'] = test['SaleType'].fillna('Na')
@@ -139,8 +141,8 @@ def group(train, val, test):
     #assign_grouping('SaleType', val, groups)
     #assign_grouping('SaleType', test, groups)
    
-    groups = grouping('SaleCondition', train, 20000)
-    assign_grouping('SaleCondition', val, groups)
-    assign_grouping('SaleCondition', test, groups)
+    #groups = grouping('SaleCondition', train, 20000)
+    #assign_grouping('SaleCondition', val, groups)
+    #assign_grouping('SaleCondition', test, groups)
     
     return train, val, test
