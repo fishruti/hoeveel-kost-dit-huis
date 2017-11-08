@@ -14,15 +14,19 @@ def fill_missing(colx, value, train, test, val):
     train.loc[:, colx] = train.loc[:, colx].fillna(value)
     test.loc[:, colx] = test.loc[:, colx].fillna(value)
     val.loc[:, colx] = val.loc[:, colx].fillna(value)
-def pre_process(train, val, test):
+    
+def pre_process(train, val, test, flag):
     ## Remove the repetitive features because they can cause problems in the fitting of gradient descent
 
     train = train.drop(['GarageArea', 'GarageYrBlt', 'TotalBsmtSF', 'TotRmsAbvGrd'], axis = 1)
-
+    train['GarageCars'] = train['GarageCars'].fillna(0)
     #Create new features, more logical features.
     train['Age'] = max(train['YearBuilt']) - train['YearBuilt']
     train['AgeMod'] = max(train['YearRemodAdd']) - train['YearRemodAdd']
     train['BsmtFinSF'] = train['BsmtFinSF1'] + train['BsmtFinSF2']
+    train['BsmtFinSF'] = train['BsmtFinSF'].fillna(0)
+    train['BsmtUnfSF'] = train['BsmtUnfSF'].fillna(0)
+    
     train['TotArea'] = train['BsmtFinSF'] + train['BsmtUnfSF'] + train['1stFlrSF'] + train['2ndFlrSF'] + train['GrLivArea']
 
     # Manually fit the order of some features to make a straight line with the target value
@@ -34,9 +38,9 @@ def pre_process(train, val, test):
     train = train.drop(['BsmtFinSF1', 'BsmtFinSF2', 'MoSold', 'YrSold', 'MiscVal'], axis=1)
 
     # drop irrelevant categorical features
-
-    fill_missing('LotFrontage', mode(train['LotFrontage'])[0][0], train, val, test)
-    fill_missing('MasVnrArea', mode(train['MasVnrArea'])[0][0], train, val, test)
+    if flag:
+        fill_missing('LotFrontage', mode(train['LotFrontage'])[0][0], train, val, test)
+        fill_missing('MasVnrArea', mode(train['MasVnrArea'])[0][0], train, val, test)
 
     train['PoolQC'] = train['PoolQC'].replace(to_replace = ['Ex', 'Fa', 'Gd'], value = [2,3,1])
     train['PoolQC'] = train['PoolQC'].fillna(0)
@@ -82,10 +86,8 @@ def pre_process(train, val, test):
 
     train['MasVnrType'] = train['MasVnrType'].fillna('Na')
 
-    train = train.fillna(train['Electrical'].value_counts().index[0])
-
-
-
+    train['Electrical'] = train['Electrical'].fillna(train['Electrical'].value_counts().index[0])
+    
     train = train.drop(['Condition2'],axis=1)
 
     train = train.drop(['RoofMatl'],axis=1)
@@ -94,13 +96,18 @@ def pre_process(train, val, test):
 
     train = train.drop(['LotShape', 'Utilities', 'Exterior1st', 'Exterior2nd'],axis=1)
 
-
-    train['HeatingQC'] = train['HeatingQC'].replace(to_replace = ['Ex', 'Gd', 'TA','Fa', 'Po', 'Na' ], value = [5,4,3,2,1,0])
-
-    train['KitchenQual'] = train['KitchenQual'].replace(to_replace = ['Ex', 'Gd', 'TA','Fa', 'Po', 'Na' ], value = [5,4,3,2,1,0])
-
-    train['Functional'] = train['Functional'].replace(to_replace = ['Typ', 'Min2', 'Mod','Maj1', 'Maj2' ], value = [5,4,3,2,1])
     
+    train['HeatingQC'] = train['HeatingQC'].replace(to_replace = ['Ex', 'Gd', 'TA','Fa', 'Po', 'Na' ], value = [5,4,3,2,1,0])
+    
+    train['KitchenQual'] = train['KitchenQual'].fillna('Na')
+    train['KitchenQual'] = train['KitchenQual'].replace(to_replace = ['Ex', 'Gd', 'TA','Fa', 'Po', 'Na' ], value = [5,4,3,2,1,0])
+    
+    train['BsmtFullBath'].fillna(0, inplace=True)
+    train['BsmtHalfBath'].fillna(0, inplace = True)
+    
+    train['Functional'] = train['Functional'].fillna('Na')
+    train.drop(['SaleType'], axis=1, inplace=True)
+
     return train
 
 def group(train, val, test):
@@ -111,7 +118,11 @@ def group(train, val, test):
     groups = grouping('Functional', train, 30000)
     assign_grouping('Functional', val, groups)
     assign_grouping('Functional', test, groups)
-
+    train['Functional'] = train['Functional'].replace(to_replace = ['Typ', 'Min1', 'Min2', 'Mod','Maj1', 'Maj2', 'Sev', 'Sal','Na' ], value = [8, 7,6,5,4,3,2,1,0])
+    test['Functional'] = test['Functional'].replace(to_replace = ['Typ', 'Min1', 'Min2', 'Mod','Maj1', 'Maj2', 'Sev', 'Sal','Na' ], value = [8,7,6,5,4,3,2,1,0])
+    val['Functional'] = val['Functional'].replace(to_replace = ['Typ', 'Min1', 'Min2', 'Mod','Maj1', 'Maj2', 'Sev', 'Sal','Na' ], value = [8,7,6,5,4,3,2,1,0])
+    
+    
     groups = grouping('PavedDrive', train, 30000)
     assign_grouping('PavedDrive', val, groups)
     assign_grouping('PavedDrive', test, groups)
@@ -121,12 +132,13 @@ def group(train, val, test):
     groups = grouping('Fence', train, 10000)
     assign_grouping('Fence', val, groups)
     assign_grouping('Fence', test, groups)
-
-    test['SaleType'] = test['SaleType'].fillna('Na')
-    groups = grouping('SaleType', train, 10000)
-    assign_grouping('SaleType', val, groups)
-    assign_grouping('SaleType', test, groups)
-
+    
+    
+    #test['SaleType'] = test['SaleType'].fillna('Na')
+    #groups = grouping('SaleType', train, 10000)
+    #assign_grouping('SaleType', val, groups)
+    #assign_grouping('SaleType', test, groups)
+   
     groups = grouping('SaleCondition', train, 20000)
     assign_grouping('SaleCondition', val, groups)
     assign_grouping('SaleCondition', test, groups)

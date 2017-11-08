@@ -13,14 +13,16 @@ def grouping(col, data, m):
         means = mean(data[data[col] == thing]['SalePrice'])
         stds = std(data[data[col] == thing]['SalePrice'])
         pairs.update({thing: (means, stds)})
-    grouping = dict()
+    group = dict()
     for key1 in pairs.keys():
+        group.update({key1:[]})
         for key2 in pairs.keys():
-            if pairs[key1][0] < pairs[key2][0] + m and pairs[key1][0] > pairs[key2][0] - m and key1 != key2:
+            if key2 not in group.keys() and pairs[key1][0] < pairs[key2][0] + m and pairs[key1][0] > pairs[key2][0] - m and\
+            key1 != key2 and pairs[key1][1] < pairs[key2][1]*(1.5) and pairs[key2][1]*(0.5):
                 data[col] = data[col].replace(to_replace = [key1], value = [key2])
-                grouping.update({key1: key2})
+                group[key1].append( key2)
         
-    return grouping
+    return group
 
 def assign_grouping(col, data, group):
     for x in data[col]:
